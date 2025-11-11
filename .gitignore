@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+
+# VSCode project settings (optional; remove if you prefer to commit)
+.vscode/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env*
+
+# Backend
+backend/target/
+backend/.env*
+backend/src/main/resources/application.properties
+backend/src/main/resources/application-*.properties
+backend/src/test/resources/application.properties
+backend/src/test/resources/application-*.properties
+backend/uploads/
+backend/*.log
+backend/logs/
+backend/server.log

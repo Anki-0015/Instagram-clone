@@ -34,3 +34,22 @@ build/
 
 ### macOS ###
 .DS_Store
+
+### Environment & secrets ###
+# Do not commit environment files
+.env*
+
+# Do not commit application properties (hold secrets/locals)
+src/main/resources/application.properties
+src/main/resources/application-*.properties
+src/test/resources/application.properties
+src/test/resources/application-*.properties
+
+### Runtime artifacts ###
+# Uploaded files (local dev storage)
+uploads/
+
+# Logs
+*.log
+logs/
+server.log
