@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, ChangeEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { api } from '../lib/api'
+import { ExploreGridSkeleton } from '../components/Skeletons'
+import { useToast } from '../components/ToastContext'
 
 function useQuery() {
   const { search } = useLocation()
@@ -10,15 +12,21 @@ function useQuery() {
 export default function ExplorePage() {
   const queryParams = useQuery()
   const initialQ = queryParams.get('q') || ''
+  const { showToast } = useToast()
 
   const [q, setQ] = useState(initialQ)
   const [searching, setSearching] = useState(false)
   const [users, setUsers] = useState<any[]>([])
   const [posts, setPosts] = useState<any[]>([])
+  const [loadingPosts, setLoadingPosts] = useState(true)
 
   useEffect(() => {
     // Load trending/all posts
-    api.getAllPosts().then((res: any) => setPosts(res.data))
+    setLoadingPosts(true)
+    api.getAllPosts()
+      .then((res: any) => setPosts(res.data))
+      .catch(() => showToast('Failed to load posts', 'error'))
+      .finally(() => setLoadingPosts(false))
   }, [])
 
   useEffect(() => {
@@ -27,6 +35,7 @@ export default function ExplorePage() {
       setSearching(true)
       api.searchUsers(initialQ)
         .then((res: any) => setUsers(res.data))
+        .catch(() => showToast('Search failed', 'error'))
         .finally(() => setSearching(false))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -41,6 +50,8 @@ export default function ExplorePage() {
     try {
       const res: any = await api.searchUsers(q.trim())
       setUsers(res.data)
+    } catch (error) {
+      showToast('Search failed', 'error')
     } finally {
       setSearching(false)
     }
@@ -92,7 +103,9 @@ export default function ExplorePage() {
       {/* Right: Explore grid */}
       <section>
         <h3 style={{ marginBottom: 12 }}>Explore</h3>
-        {posts.length === 0 ? (
+        {loadingPosts ? (
+          <ExploreGridSkeleton />
+        ) : posts.length === 0 ? (
           <div className="ig-card ig-p-md" style={{ textAlign: 'center' }}>
             <p className="ig-text-secondary">No posts yet. Create the first one!</p>
           </div>

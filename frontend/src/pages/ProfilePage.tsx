@@ -2,15 +2,20 @@ import { useEffect, useState, ChangeEvent, FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../auth/AuthContext'
+import { ProfileGridSkeleton } from '../components/Skeletons'
+import { useToast } from '../components/ToastContext'
 
 export default function ProfilePage() {
   const { username } = useParams()
   const { user: currentUser } = useAuth()
+  const { showToast } = useToast()
   const [user, setUser] = useState<any | null>(null)
   const [posts, setPosts] = useState<any[]>([])
+  const [savedPosts, setSavedPosts] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<'posts' | 'saved'>('posts')
   const [following, setFollowing] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [postsLoading, setPostsLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [newFullName, setNewFullName] = useState('')
   const [newBio, setNewBio] = useState('')
@@ -24,13 +29,17 @@ export default function ProfilePage() {
     api.get(`/api/users/username/${username}`).then((res: any) => {
       setUser(res.data)
       setFollowing(res.data.isFollowing || false)
-    })
+    }).catch(() => showToast('Failed to load profile', 'error'))
   }, [username])
 
   useEffect(() => {
     if (!user) return
-    api.get(`/api/posts/user/${user.id}`).then((res: any) => setPosts(res.data))
-  }, [user])
+    setPostsLoading(true)
+    Promise.all([
+      api.get(`/api/posts/user/${user.id}`).then((res: any) => setPosts(res.data)),
+      isOwnProfile ? api.getSavedPosts().then((res: any) => setSavedPosts(res.data)) : Promise.resolve()
+    ]).finally(() => setPostsLoading(false))
+  }, [user, isOwnProfile])
 
   const handleFollow = async () => {
     if (!user) return
@@ -40,11 +49,15 @@ export default function ProfilePage() {
         await api.delete(`/api/users/${user.id}/follow`)
         setFollowing(false)
         setUser({ ...user, followersCount: user.followersCount - 1 })
+        showToast(`Unfollowed ${user.username}`, 'info')
       } else {
         await api.post(`/api/users/${user.id}/follow`)
         setFollowing(true)
         setUser({ ...user, followersCount: user.followersCount + 1 })
+        showToast(`Following ${user.username}`, 'success')
       }
+    } catch (error) {
+      showToast('Failed to update follow status', 'error')
     } finally {
       setLoading(false)
     }
@@ -194,96 +207,163 @@ export default function ProfilePage() {
 
       {/* Posts Grid */}
       {activeTab === 'posts' && (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '4px',
-            padding: '0'
-          }}
-        >
-          {posts.length === 0 ? (
-            <div
-              style={{
-                gridColumn: '1 / -1',
-                textAlign: 'center',
-                padding: '60px 20px'
-              }}
-            >
-              <div style={{ fontSize: '60px', marginBottom: '16px' }}>📷</div>
-              <h2 style={{ marginBottom: '8px' }}>No Posts Yet</h2>
-              {isOwnProfile && (
-                <p className="ig-text-secondary">When you share photos, they'll appear on your profile.</p>
-              )}
-            </div>
-          ) : (
-            posts.map((post) => (
+        postsLoading ? (
+          <ProfileGridSkeleton />
+        ) : (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '4px',
+              padding: '0'
+            }}
+          >
+            {posts.length === 0 ? (
               <div
-                key={post.id}
                 style={{
-                  aspectRatio: '1/1',
-                  overflow: 'hidden',
-                  cursor: 'pointer',
-                  position: 'relative'
+                  gridColumn: '1 / -1',
+                  textAlign: 'center',
+                  padding: '60px 20px'
                 }}
               >
-                <img
-                  src={post.imageUrl}
-                  alt="Post"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    display: 'block'
-                  }}
-                />
-                {/* Hover overlay */}
+                <div style={{ fontSize: '60px', marginBottom: '16px' }}>📷</div>
+                <h2 style={{ marginBottom: '8px' }}>No Posts Yet</h2>
+                {isOwnProfile && (
+                  <p className="ig-text-secondary">When you share photos, they'll appear on your profile.</p>
+                )}
+              </div>
+            ) : (
+              posts.map((post) => (
                 <div
+                  key={post.id}
                   style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'rgba(0, 0, 0, 0)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '20px',
-                    color: '#fff',
-                    fontWeight: 600,
-                    transition: 'background 0.2s',
-                    opacity: 0
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(0, 0, 0, 0.3)'
-                    e.currentTarget.style.opacity = '1'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(0, 0, 0, 0)'
-                    e.currentTarget.style.opacity = '0'
+                    aspectRatio: '1/1',
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    position: 'relative'
                   }}
                 >
-                  <span>❤️ {post.likesCount || 0}</span>
-                  <span>💬 {post.commentsCount || 0}</span>
+                  <img
+                    src={post.imageUrl}
+                    alt="Post"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      display: 'block'
+                    }}
+                  />
+                  {/* Hover overlay */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: 'rgba(0, 0, 0, 0)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '20px',
+                      color: '#fff',
+                      fontWeight: 600,
+                      transition: 'background 0.2s',
+                      opacity: 0
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(0, 0, 0, 0.3)'
+                      e.currentTarget.style.opacity = '1'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(0, 0, 0, 0)'
+                      e.currentTarget.style.opacity = '0'
+                    }}
+                  >
+                    <span>❤️ {post.likesCount || 0}</span>
+                    <span>💬 {post.commentsCount || 0}</span>
+                  </div>
                 </div>
-              </div>
-            ))
-          )}
-        </div>
+              ))
+            )}
+          </div>
+        )
       )}
 
       {activeTab === 'saved' && (
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '60px 20px'
-          }}
-        >
-          <div style={{ fontSize: '60px', marginBottom: '16px' }}>🔖</div>
-          <h2 style={{ marginBottom: '8px' }}>Save</h2>
-          <p className="ig-text-secondary">Save photos and videos that you want to see again.</p>
-        </div>
+        postsLoading ? (
+          <ProfileGridSkeleton />
+        ) : (
+          <div>
+            {!isOwnProfile ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                <div style={{ fontSize: '60px', marginBottom: '16px' }}>🔒</div>
+                <h2 style={{ marginBottom: '8px' }}>Private</h2>
+                <p className="ig-text-secondary">Only {user?.username} can see their saved posts.</p>
+              </div>
+            ) : savedPosts.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                <div style={{ fontSize: '60px', marginBottom: '16px' }}>🔖</div>
+                <h2 style={{ marginBottom: '8px' }}>Save</h2>
+                <p className="ig-text-secondary">Save photos and videos that you want to see again.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
+                {savedPosts.map((post) => (
+                  <div
+                    key={post.id}
+                    style={{
+                      aspectRatio: '1/1',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      position: 'relative'
+                    }}
+                  >
+                    <img
+                      src={post.imageUrl}
+                      alt="Saved post"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: 'block'
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0, 0, 0, 0)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '20px',
+                        color: '#fff',
+                        fontWeight: 600,
+                        transition: 'background 0.2s',
+                        opacity: 0
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.3)'
+                        e.currentTarget.style.opacity = '1'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0)'
+                        e.currentTarget.style.opacity = '0'
+                      }}
+                    >
+                      <span>❤️ {post.likesCount || 0}</span>
+                      <span>💬 {post.commentsCount || 0}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )
       )}
 
       {editing && (
@@ -311,18 +391,23 @@ export default function ProfilePage() {
             <form
               onSubmit={async (e: FormEvent) => {
                 e.preventDefault()
-                let profilePictureUrl = newProfilePicUrl.trim()
-                if (newProfilePicFile) {
-                  const uploadRes = await api.upload(newProfilePicFile)
-                  profilePictureUrl = uploadRes.data.url
+                try {
+                  let profilePictureUrl = newProfilePicUrl.trim()
+                  if (newProfilePicFile) {
+                    const uploadRes = await api.upload(newProfilePicFile)
+                    profilePictureUrl = uploadRes.data.url
+                  }
+                  await api.put('/api/users/me', {
+                    fullName: newFullName,
+                    bio: newBio,
+                    profilePicture: profilePictureUrl || null
+                  })
+                  setUser({ ...user, fullName: newFullName, bio: newBio, profilePicture: profilePictureUrl })
+                  setEditing(false)
+                  showToast('Profile updated successfully', 'success')
+                } catch (error) {
+                  showToast('Failed to update profile', 'error')
                 }
-                await api.put('/api/users/me', {
-                  fullName: newFullName,
-                  bio: newBio,
-                  profilePicture: profilePictureUrl || null
-                })
-                setUser({ ...user, fullName: newFullName, bio: newBio, profilePicture: profilePictureUrl })
-                setEditing(false)
               }}
               style={{ display: 'grid', gap: 12 }}
             >

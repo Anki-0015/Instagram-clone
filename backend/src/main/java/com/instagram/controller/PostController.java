@@ -1,13 +1,20 @@
 package com.instagram.controller;
 
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.instagram.dto.MessageResponse;
 import com.instagram.dto.PostRequest;
 import com.instagram.dto.PostResponse;
 import com.instagram.service.PostService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -42,6 +49,11 @@ public class PostController {
     public ResponseEntity<List<PostResponse>> getAllPosts() {
         return ResponseEntity.ok(postService.getAllPosts());
     }
+
+    @GetMapping("/saved")
+    public ResponseEntity<List<PostResponse>> getSavedPosts() {
+        return ResponseEntity.ok(postService.getSavedPosts());
+    }
     
     @PostMapping("/{postId}/like")
     public ResponseEntity<MessageResponse> likePost(@PathVariable Long postId) {
@@ -53,6 +65,18 @@ public class PostController {
     public ResponseEntity<MessageResponse> unlikePost(@PathVariable Long postId) {
         postService.unlikePost(postId);
         return ResponseEntity.ok(new MessageResponse("Post unliked successfully"));
+    }
+
+    @PostMapping("/{postId}/save")
+    public ResponseEntity<MessageResponse> savePost(@PathVariable Long postId) {
+        postService.savePost(postId);
+        return ResponseEntity.ok(new MessageResponse("Post saved successfully"));
+    }
+
+    @DeleteMapping("/{postId}/save")
+    public ResponseEntity<MessageResponse> unsavePost(@PathVariable Long postId) {
+        postService.unsavePost(postId);
+        return ResponseEntity.ok(new MessageResponse("Post unsaved successfully"));
     }
     
     @DeleteMapping("/{postId}")

@@ -1,12 +1,13 @@
 package com.instagram.repository;
 
-import com.instagram.model.Post;
-import com.instagram.model.User;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import com.instagram.model.Post;
+import com.instagram.model.User;
 
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
@@ -20,4 +21,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     
     @Query("SELECT p FROM Post p ORDER BY p.createdAt DESC")
     List<Post> findAllOrderByCreatedAtDesc();
+
+    @Query("SELECT p FROM User u JOIN u.savedPosts p WHERE u = :user ORDER BY p.createdAt DESC")
+    List<Post> findSavedPostsByUser(User user);
 }

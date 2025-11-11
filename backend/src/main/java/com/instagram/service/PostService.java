@@ -1,25 +1,29 @@
 package com.instagram.service;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.instagram.dto.PostRequest;
 import com.instagram.dto.PostResponse;
 import com.instagram.model.Post;
 import com.instagram.model.User;
 import com.instagram.repository.PostRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class PostService {
     
     private final PostRepository postRepository;
     private final UserService userService;
-    public PostService(PostRepository postRepository, UserService userService) {
+    private final NotificationService notificationService;
+    
+    public PostService(PostRepository postRepository, UserService userService, NotificationService notificationService) {
         this.postRepository = postRepository;
         this.userService = userService;
+        this.notificationService = notificationService;
     }
     
     @Transactional
@@ -35,6 +39,7 @@ public class PostService {
         
         PostResponse response = new PostResponse(post);
         response.setLiked(false);
+        response.setSaved(currentUser.getSavedPosts().contains(post));
         return response;
     }
     
@@ -45,6 +50,7 @@ public class PostService {
         User currentUser = userService.getCurrentUser();
         PostResponse response = new PostResponse(post);
         response.setLiked(post.getLikes().contains(currentUser));
+        response.setSaved(currentUser.getSavedPosts().contains(post));
         
         return response;
     }
@@ -57,6 +63,7 @@ public class PostService {
                 .map(post -> {
                     PostResponse response = new PostResponse(post);
                     response.setLiked(post.getLikes().contains(currentUser));
+                    response.setSaved(currentUser.getSavedPosts().contains(post));
                     return response;
                 })
                 .collect(Collectors.toList());
@@ -73,6 +80,7 @@ public class PostService {
                 .map(post -> {
                     PostResponse response = new PostResponse(post);
                     response.setLiked(post.getLikes().contains(currentUser));
+                    response.setSaved(currentUser.getSavedPosts().contains(post));
                     return response;
                 })
                 .collect(Collectors.toList());
@@ -101,6 +109,9 @@ public class PostService {
         currentUser.getLikedPosts().add(post);
         
         postRepository.save(post);
+        
+        // Create notification
+        notificationService.createLikeNotification(post, currentUser);
     }
     
     @Transactional
@@ -113,6 +124,36 @@ public class PostService {
         currentUser.getLikedPosts().remove(post);
         
         postRepository.save(post);
+    }
+
+    @Transactional
+    public void savePost(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+        User currentUser = userService.getCurrentUser();
+        
+        currentUser.getSavedPosts().add(post);
+        // userRepository is not injected here; saved via owning side flush when transaction ends
+    }
+
+    @Transactional
+    public void unsavePost(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+        User currentUser = userService.getCurrentUser();
+        
+        currentUser.getSavedPosts().remove(post);
+    }
+
+    public List<PostResponse> getSavedPosts() {
+        User currentUser = userService.getCurrentUser();
+        List<Post> posts = postRepository.findSavedPostsByUser(currentUser);
+        return posts.stream().map(p -> {
+            PostResponse r = new PostResponse(p);
+            r.setLiked(p.getLikes().contains(currentUser));
+            r.setSaved(true);
+            return r;
+        }).collect(Collectors.toList());
     }
     
     @Transactional

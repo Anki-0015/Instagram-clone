@@ -45,6 +45,33 @@ class ApiClient {
     return this.get('/api/posts/all')
   }
 
+  getSavedPosts() {
+    return this.get('/api/posts/saved')
+  }
+  savePost(postId: number) {
+    return this.post(`/api/posts/${postId}/save`)
+  }
+  unsavePost(postId: number) {
+    return this.delete(`/api/posts/${postId}/save`)
+  }
+
+  // Notifications
+  getNotifications() {
+    return this.get('/api/notifications')
+  }
+  getUnreadNotifications() {
+    return this.get('/api/notifications/unread')
+  }
+  getUnreadCount() {
+    return this.get('/api/notifications/unread/count')
+  }
+  markNotificationAsRead(notificationId: number) {
+    return this.put(`/api/notifications/${notificationId}/read`)
+  }
+  markAllNotificationsAsRead() {
+    return this.put('/api/notifications/read-all')
+  }
+
   put(url: string, data?: any, config: any = {}) {
     return this.client.put(url, data, { ...config, headers: this.withAuth(config.headers) })
   }

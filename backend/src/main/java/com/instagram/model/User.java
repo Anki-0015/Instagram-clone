@@ -1,16 +1,28 @@
 package com.instagram.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "users")
@@ -73,6 +85,15 @@ public class User {
         inverseJoinColumns = @JoinColumn(name = "post_id")
     )
     private Set<Post> likedPosts = new HashSet<>();
+
+    @JsonIgnore
+    @ManyToMany
+    @JoinTable(
+        name = "post_saves",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "post_id")
+    )
+    private Set<Post> savedPosts = new HashSet<>();
     
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -108,5 +129,7 @@ public class User {
     public void setComments(List<Comment> comments) { this.comments = comments; }
     public Set<Post> getLikedPosts() { return likedPosts; }
     public void setLikedPosts(Set<Post> likedPosts) { this.likedPosts = likedPosts; }
+    public Set<Post> getSavedPosts() { return savedPosts; }
+    public void setSavedPosts(Set<Post> savedPosts) { this.savedPosts = savedPosts; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

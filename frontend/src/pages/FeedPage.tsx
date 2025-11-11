@@ -1,6 +1,9 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import InstagramPost from '../components/InstagramPost'
+import CommentsModal from '../components/CommentsModal'
+import { PostSkeleton } from '../components/Skeletons'
+import { useToast } from '../components/ToastContext'
 
 export default function FeedPage() {
   const [posts, setPosts] = useState<any[]>([])
@@ -9,9 +12,20 @@ export default function FeedPage() {
   const [caption, setCaption] = useState('')
   const [posting, setPosting] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [commentingPost, setCommentingPost] = useState<any | null>(null)
+  const [loading, setLoading] = useState(true)
+  const { showToast } = useToast()
 
-  const loadFeed = () => {
-    api.get('/api/posts/feed').then((res: any) => setPosts(res.data))
+  const loadFeed = async () => {
+    try {
+      setLoading(true)
+      const res = await api.get('/api/posts/feed')
+      setPosts(res.data)
+    } catch (error) {
+      showToast('Failed to load feed', 'error')
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { loadFeed() }, [])
@@ -31,18 +45,51 @@ export default function FeedPage() {
       setFile(null)
       setCaption('')
       setShowCreateModal(false)
+      showToast('Post created successfully!', 'success')
       loadFeed()
+    } catch (error) {
+      showToast('Failed to create post', 'error')
     } finally {
       setPosting(false)
     }
   }
 
   const handleLike = async (postId: number) => {
-    await api.post(`/api/posts/${postId}/like`)
+    try {
+      await api.post(`/api/posts/${postId}/like`)
+      loadFeed()
+    } catch (error) {
+      showToast('Failed to like post', 'error')
+    }
   }
 
   const handleUnlike = async (postId: number) => {
-    await api.delete(`/api/posts/${postId}/like`)
+    try {
+      await api.delete(`/api/posts/${postId}/like`)
+      loadFeed()
+    } catch (error) {
+      showToast('Failed to unlike post', 'error')
+    }
+  }
+
+  const handleSave = async (postId: number) => {
+    try {
+      await api.savePost(postId)
+      showToast('Post saved', 'success')
+      loadFeed()
+    } catch (error) {
+      showToast('Failed to save post', 'error')
+    }
+  }
+
+  const handleUnsave = async (postId: number) => {
+    try {
+      await api.unsavePost(postId)
+      showToast('Post removed from saved', 'info')
+      loadFeed()
+    } catch (error) {
+      showToast('Failed to unsave post', 'error')
+    }
   }
 
   return (
@@ -149,7 +196,13 @@ export default function FeedPage() {
       )}
 
       {/* Feed Posts */}
-      {posts.length === 0 ? (
+      {loading ? (
+        <>
+          <PostSkeleton />
+          <PostSkeleton />
+          <PostSkeleton />
+        </>
+      ) : posts.length === 0 ? (
         <div className="ig-card ig-p-md" style={{ textAlign: 'center' }}>
           <h3 className="ig-mb-md">Welcome to Instagram!</h3>
           <p className="ig-text-secondary ig-mb-md">
@@ -166,8 +219,22 @@ export default function FeedPage() {
             {...post}
             onLike={() => handleLike(post.id)}
             onUnlike={() => handleUnlike(post.id)}
+            onSave={() => handleSave(post.id)}
+            onUnsave={() => handleUnsave(post.id)}
+            onComment={() => setCommentingPost(post)}
           />
         ))
+      )}
+
+      {/* Comments Modal */}
+      {commentingPost && (
+        <CommentsModal
+          postId={commentingPost.id}
+          postImage={commentingPost.imageUrl}
+          postUser={commentingPost.user}
+          postCaption={commentingPost.caption}
+          onClose={() => setCommentingPost(null)}
+        />
       )}
     </div>
   )

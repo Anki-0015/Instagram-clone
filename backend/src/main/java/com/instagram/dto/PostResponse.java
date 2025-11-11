@@ -1,8 +1,8 @@
 package com.instagram.dto;
 
-import com.instagram.model.Post;
-
 import java.time.LocalDateTime;
+
+import com.instagram.model.Post;
 
 public class PostResponse {
     private Long id;
@@ -12,6 +12,7 @@ public class PostResponse {
     private int likesCount;
     private int commentsCount;
     private boolean isLiked;
+    private boolean isSaved;
     private LocalDateTime createdAt;
 
     public PostResponse() {
@@ -41,6 +42,8 @@ public class PostResponse {
     public void setCommentsCount(int commentsCount) { this.commentsCount = commentsCount; }
     public boolean isLiked() { return isLiked; }
     public void setLiked(boolean liked) { isLiked = liked; }
+    public boolean isSaved() { return isSaved; }
+    public void setSaved(boolean saved) { isSaved = saved; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

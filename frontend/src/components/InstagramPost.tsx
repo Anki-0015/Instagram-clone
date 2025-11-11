@@ -15,10 +15,13 @@ interface InstagramPostProps {
   likesCount: number
   commentsCount: number
   isLiked: boolean
+  isSaved?: boolean
   createdAt: string
   onLike: () => void
   onUnlike: () => void
   onComment?: () => void
+  onSave?: () => void
+  onUnsave?: () => void
 }
 
 export default function InstagramPost({
@@ -28,13 +31,17 @@ export default function InstagramPost({
   likesCount,
   commentsCount,
   isLiked,
+  isSaved = false,
   createdAt,
   onLike,
   onUnlike,
-  onComment
+  onComment,
+  onSave,
+  onUnsave
 }: InstagramPostProps) {
   const [liked, setLiked] = useState(isLiked)
   const [likesNum, setLikesNum] = useState(likesCount)
+  const [saved, setSaved] = useState(isSaved)
   const [showFullCaption, setShowFullCaption] = useState(false)
 
   const handleLike = async () => {
@@ -134,8 +141,17 @@ export default function InstagramPost({
             className="ig-btn-text"
             style={{ fontSize: '24px', padding: 0 }}
             aria-label="Save"
+            onClick={async () => {
+              if (saved) {
+                if (onUnsave) await onUnsave()
+                setSaved(false)
+              } else {
+                if (onSave) await onSave()
+                setSaved(true)
+              }
+            }}
           >
-            🔖
+            {saved ? '📌' : '�'}
           </button>
         </div>
 

@@ -1,22 +1,27 @@
 package com.instagram.service;
 
-import com.instagram.dto.UserResponse;
-import com.instagram.model.User;
-import com.instagram.repository.UserRepository;
-import com.instagram.security.UserDetailsImpl;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import com.instagram.dto.UserResponse;
+import com.instagram.model.User;
+import com.instagram.repository.UserRepository;
+import com.instagram.security.UserDetailsImpl;
 
 @Service
 public class UserService {
     
     private final UserRepository userRepository;
-    public UserService(UserRepository userRepository) {
+    private final NotificationService notificationService;
+    
+    public UserService(UserRepository userRepository, @Lazy NotificationService notificationService) {
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
     
     public User getCurrentUser() {
@@ -75,6 +80,9 @@ public class UserService {
         
         userRepository.save(userToFollow);
         userRepository.save(currentUser);
+        
+        // Create notification
+        notificationService.createFollowNotification(userToFollow, currentUser);
     }
     
     @Transactional

@@ -1,5 +1,11 @@
 package com.instagram.service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.instagram.dto.CommentRequest;
 import com.instagram.dto.CommentResponse;
 import com.instagram.model.Comment;
@@ -7,11 +13,6 @@ import com.instagram.model.Post;
 import com.instagram.model.User;
 import com.instagram.repository.CommentRepository;
 import com.instagram.repository.PostRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class CommentService {
@@ -19,10 +20,14 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final UserService userService;
-    public CommentService(CommentRepository commentRepository, PostRepository postRepository, UserService userService) {
+    private final NotificationService notificationService;
+    
+    public CommentService(CommentRepository commentRepository, PostRepository postRepository, 
+                         UserService userService, NotificationService notificationService) {
         this.commentRepository = commentRepository;
         this.postRepository = postRepository;
         this.userService = userService;
+        this.notificationService = notificationService;
     }
     
     @Transactional
@@ -37,6 +42,9 @@ public class CommentService {
         comment.setPost(post);
         
         comment = commentRepository.save(comment);
+        
+        // Create notification
+        notificationService.createCommentNotification(comment, currentUser);
         
         return new CommentResponse(comment);
     }
