@@ -4,7 +4,7 @@ import { api } from '../lib/api'
 type AuthContextType = {
   isAuthenticated: boolean
   token: string | null
-  user: { id: number; username: string; email: string } | null
+  user: { id: number; username: string; email: string; profilePicture?: string; fullName?: string } | null
   login: (username: string, password: string) => Promise<void>
   signup: (username: string, email: string, password: string, fullName?: string) => Promise<void>
   logout: () => void

@@ -28,6 +28,23 @@ class ApiClient {
     return this.client.post(url, data, { ...config, headers: this.withAuth(config.headers) })
   }
 
+  upload(file: File) {
+    const form = new FormData()
+    form.append('file', file)
+    return this.client.post('/api/upload', form, {
+      headers: { ...this.withAuth(), 'Content-Type': 'multipart/form-data' }
+    })
+  }
+
+  // Convenience helpers
+  searchUsers(query: string) {
+    const params = new URLSearchParams({ query })
+    return this.get(`/api/users/search?${params.toString()}`)
+  }
+  getAllPosts() {
+    return this.get('/api/posts/all')
+  }
+
   put(url: string, data?: any, config: any = {}) {
     return this.client.put(url, data, { ...config, headers: this.withAuth(config.headers) })
   }

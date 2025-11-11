@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import FeedPage from './pages/FeedPage'
 import ProfilePage from './pages/ProfilePage'
+import ExplorePage from './pages/ExplorePage'
 import Layout from './components/Layout'
 
 function PrivateRoute({ children }: { children: JSX.Element }) {
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<PrivateRoute><FeedPage /></PrivateRoute>} />
           <Route path="/u/:username" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
+          <Route path="/explore" element={<PrivateRoute><ExplorePage /></PrivateRoute>} />
         </Route>
       </Routes>
     </AuthProvider>

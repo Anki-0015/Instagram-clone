@@ -68,6 +68,8 @@ public class SecurityConfig {
                 // Use AntPathRequestMatcher explicitly to avoid ambiguity when multiple servlets exist (e.g., H2 console)
                 .requestMatchers(new AntPathRequestMatcher("/api/auth/**")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll()
+                // Allow serving uploaded static files
+                .requestMatchers(new AntPathRequestMatcher("/uploads/**", "GET")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/error")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/", "GET")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/**", "OPTIONS")).permitAll()
